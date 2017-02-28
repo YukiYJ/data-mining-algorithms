@@ -1,17 +1,15 @@
 ---
-title: "Apriori Question"
+title: "Apriori Frequent Itemsets Generations"
 author: "MA Mingyu 14110562D"
 date: "2/28/2017"
 output: pdf_document
 ---
-#COMP4433
-#Assignment 1
-##derek.ma@connect.polyu.hk
-##derek.ma
-This R markdown file can be found at 
+#COMP4433 Assignment 1
+##derek.ma@connect.polyu.hk [derek.ma](http://derek.ma)
+This R markdown file can be found at https://github.com/derekmma/data-mining-algorithms/blob/master/apriori_simulation.Rmd
 
 
-###First set up and prepare the data
+#Set Up and Prepare the Database
 ```{r setup}
 library(dplyr)
 library(magrittr)
@@ -33,7 +31,7 @@ transactions <- filter(transactions, item != "Maintenance")
 min_sup_count <- min_sup * (max(transactions$id) - length(maintenance$id))
 ```
 
-###Prepare for iteration
+#Prepare for Iterations
 
 Write scan function and transform current data to `transactions_byID` which shown below:
 
@@ -42,7 +40,6 @@ Write scan function and transform current data to `transactions_byID` which show
 scan <- function(itemList){
   index <- 0
   for (i in 1:nrow(transactions_byID)){
-    print("hi!")
     exist <- TRUE
     for (j in 1:length(itemList)){
       if (transactions_byID[i,itemList[j]] == FALSE){
@@ -70,26 +67,103 @@ for (i in 1:nrow(transactions)){
 transactions_byID
 ```
 
-###First-round
+#First-Round
 ```{r round1}
 #C1
-
 c1 <- summarize(group_by(transactions, item),sup = n())
 l1 <- filter(c1, sup > min_sup_count)
 ```
+C1:
+```{r callc1}
+c1
+```
 
+In this case, all itemsets' support count is larger than minimum support count requirement, thus L1 is:
+```{r calll1}
+l1
+```
 
+#Second-Round
+Self-crosing find the new itemsets in C2, because all itemsets in C1 is under requirement, so no need to pruning:
 ```{r round2}
 #C2
-
 c2 <- data.frame()
+n1 <- 0
 for (itm1 in l1$item){
+  n1 <- n1 + 1
+  n2 <- 0
   for (itm2 in l1$item){
-    if (itm1 != itm2){
-      temp <- data.frame(item1 = itm1, item2 = itm2)
+    n2 <- n2 + 1
+    if (itm1 != itm2 && n2 > n1){
+      temp <- data.frame(item1 = itm1, item2 = itm2, sup = scan(c(itm1,itm2)))
       c2 <- rbind(c2, temp)
     }
   }
 }
+
+c2 <- c2 %>%
+  mutate(sup_dist = sup - min_sup_count)
+c2
 ```
 
+In this case, we can found some of the records in C2 have low support count, so we should delete them from C2 to produce L2:
+
+```{r round2.2}
+l2 <- filter(c2, sup_dist >= 0) %>%
+  select(item1,item2,sup)
+l2
+```
+
+#Third Round
+First create candidates based on L2:
+```{r round3}
+c3 <- data.frame()
+for (i1 in 1:nrow(l2)){
+  for (i2 in 1:nrow(l2)){
+    if (i2 > i1){
+      uni <- union(c(as.character(l2[i1,1]),as.character(l2[i1,2])),
+                   c(as.character(l2[i2,1]),as.character(l2[i2,2])))
+      if (length(uni) == 3) {
+        stop <- FALSE
+        for (m in 1:nrow(c3)){
+          if (setequal(uni, c(as.character(c3[m,1]), as.character(c3[m,2]), as.character(c3[m,3]))) == TRUE){
+            stop <- TRUE
+          }
+        }
+        if (stop == FALSE) {
+          temp <- data.frame(item1 = uni[1], item2 = uni[2], item3 = uni[3], sup = scan(uni))
+          c3 <- rbind(c3, temp)
+        }
+      }
+    }
+  }
+}
+c3 %>% select(item1,item2,item3)
+```
+
+In this table, No. 2, 3, 5, 7, 8 contain the itemset with low support in C2, so we delete them and calculate the support:
+```{r round3.2}
+c3 <- c3 %>%
+  mutate(sup_dist = sup - min_sup_count) %>%
+  slice(c(1,4,6))
+c3
+```
+
+Then we delete the itemsets with low support and get L3:
+```{r round3.3}
+l3 <- filter(c3, sup_dist >= 0) %>%
+  select(item1,item2,item3,sup)
+l3
+```
+
+#Fourth Round
+Will this round be the final round?
+Create candinates based on L3:
+Then I found the C4 is empty because all 4-item itemsets are pruned. The algorithm terminated. All frequent itemsets are found in L1, L2 and L3.
+
+#Result
+```{r result}
+l1
+l2
+l3
+```
