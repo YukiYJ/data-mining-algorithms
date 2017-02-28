@@ -1,0 +1,95 @@
+---
+title: "Apriori Question"
+author: "MA Mingyu 14110562D"
+date: "2/28/2017"
+output: pdf_document
+---
+#COMP4433
+#Assignment 1
+##derek.ma@connect.polyu.hk
+##derek.ma
+This R markdown file can be found at 
+
+
+###First set up and prepare the data
+```{r setup}
+library(dplyr)
+library(magrittr)
+library(norm)
+
+#Read the data from a .csv file
+transactions <- read.csv("~/GoogleDrive/_DM/3_Homework/transactions.csv", stringsAsFactors = FALSE)
+colnames(transactions) <- c ("id","item") #change column names
+
+#input min_sup and min_conf provided in the question
+min_sup <- 0.17
+min_conf <- 0.8
+
+#filter out all maintenance record
+maintenance <- filter(transactions, item == "Maintenance")
+transactions <- filter(transactions, item != "Maintenance")
+
+#calculate minimum support count
+min_sup_count <- min_sup * (max(transactions$id) - length(maintenance$id))
+```
+
+###Prepare for iteration
+
+Write scan function and transform current data to `transactions_byID` which shown below:
+
+```{r iteration}
+#Scan function: input-a itemset; output-how many times this itemset appears in the transaction record
+scan <- function(itemList){
+  index <- 0
+  for (i in 1:nrow(transactions_byID)){
+    print("hi!")
+    exist <- TRUE
+    for (j in 1:length(itemList)){
+      if (transactions_byID[i,itemList[j]] == FALSE){
+        exist <- FALSE
+      }
+    }
+    if (exist == TRUE) {
+      index <- index + 1
+    }
+  }
+  index
+}
+
+#Another form of transactions grouped by ID.
+transactions_byID <- data.frame(id=1:max(transactions$id),
+                                Case=rep(FALSE,max(transactions$id)),
+                                Desktop=rep(FALSE,max(transactions$id)),
+                                DisplayCard=rep(FALSE,max(transactions$id)),
+                                Mouse=rep(FALSE,max(transactions$id)),
+                                Speaker=rep(FALSE,max(transactions$id)))
+
+for (i in 1:nrow(transactions)){
+  transactions_byID[transactions[i,1],transactions[i,2]] <- TRUE
+}
+transactions_byID
+```
+
+###First-round
+```{r round1}
+#C1
+
+c1 <- summarize(group_by(transactions, item),sup = n())
+l1 <- filter(c1, sup > min_sup_count)
+```
+
+
+```{r round2}
+#C2
+
+c2 <- data.frame()
+for (itm1 in l1$item){
+  for (itm2 in l1$item){
+    if (itm1 != itm2){
+      temp <- data.frame(item1 = itm1, item2 = itm2)
+      c2 <- rbind(c2, temp)
+    }
+  }
+}
+```
+
