@@ -1,0 +1,63 @@
+---
+title: "kNN_distance"
+author: "MA Mingyu 14110562D"
+date: "4/4/2017"
+output: pdf_document
+---
+#COMP4433 Assignment 2
+##derek.ma@connect.polyu.hk [derek.ma](http://derek.ma)
+This R markdown file can be found at https://github.com/derekmma/data-mining-algorithms/blob/master/apriori_simulation.Rmd
+
+
+```{r setup, include=TRUE}
+library(dplyr)
+survey <- read.csv("~/Google Drive/_DM/2_Assignments/Ass2/data_q2.csv", stringsAsFactors = FALSE)
+colnames(survey) <- c ("customerNo","averageMonthlyPayment","averageDurationOfCalls","totalCallingTime","decision")
+```
+
+```{r distance}
+distance <- function(vector1, vector2){
+  #Euclidean distance
+  count <- 0
+  for (i in 1:length(vector1)){
+    count = count + (vector1[i] - vector2[i])^2
+  }
+  count^(1/2)
+}
+```
+
+```{r setTestData}
+k <- 5
+testData <- c(293.26,16.96,120.25)
+```
+
+```{r preprocessing}
+#Normalization
+min1 <- min(survey$averageMonthlyPayment)
+max1 <- max(survey$averageMonthlyPayment)
+min2 <- min(survey$averageDurationOfCalls)
+max2 <- max(survey$averageDurationOfCalls)
+min3 <- min(survey$totalCallingTime)
+max3 <- max(survey$totalCallingTime)
+testDataNormalized <- c(
+  (testData[1]-min1)/(max1-min1),
+  (testData[2]-min2)/(max2-min2),
+  (testData[3]-min3)/(max3-min3))
+survey <- survey %>%
+  mutate(averageMonthlyPaymentNormalized = (averageMonthlyPayment - min1)/(max1-min1)) %>%
+  mutate(averageDurationOfCallsNormalized = (averageDurationOfCalls - min2)/(max2-min2)) %>%
+  mutate(totalCallingTimeNormalized = (totalCallingTime - min3)/(max3-min3))
+```
+
+```{r calculate distance}
+survey <- survey %>%
+  mutate(dist=NA)
+
+for (i in 1:length(survey$customerNo)){
+  survey[i,"dist"] <- distance(testDataNormalized, c(survey[i,"averageMonthlyPaymentNormalized"],survey[i,"averageDurationOfCallsNormalized"],survey[i,"totalCallingTimeNormalized"]))
+}
+
+surveySorted <- survey[order(survey$dist),]
+surveySorted[1:k,]
+```
+

@@ -1,0 +1,118 @@
+---
+title: "Information_Gain_Computation"
+author: "MA Mingyu 14110562D"
+date: "4/4/2017"
+output: pdf_document
+---
+#COMP4433 Assignment 2
+##derek.ma@connect.polyu.hk [derek.ma](http://derek.ma)
+This R markdown file can be found at https://github.com/derekmma/data-mining-algorithms/blob/master/apriori_simulation.Rmd
+
+#Initialization of Training Data
+```{r setup, include=TRUE}
+#init demo data to a data frame
+training_set <- data.frame(
+  sex=c("F","F","M","M","F","F","M","F","M","F","F","F","M","M","F","F","M","F","M","F"),
+  age=c("Y","M","S","M","Y","S","Y","M","Y","M","M","M","Y","S","S","Y","S","Y","M","S"),
+  married=c("Y","N","N","Y","Y","Y","N","Y","N","Y","Y","Y","Y","N","Y","N","N","Y","N","Y"),
+  income=c("H","H","M","M","M","L","H","L","M","M","H","H","L","M","M","L","H","H","M","L"),
+  plan=c("A","C","B","B","C","B","C","C","A","C","C","A","B","A","A","C","C","B","B","A"),
+  renew=c("Y","Y","N","Y","Y","N","N","Y","N","Y","Y","Y","N","N","N","Y","N","Y","Y","N")
+  )
+```
+
+#Functions to Calculate Entropy and Informtion Gain
+```{r entropy}
+entropy <- function(dataset,targetFeature){
+  #input: the target feature column after selected
+  #out: the entropy under this condition
+  target <- dataset[,targetFeature]
+  allValues <- unique(target)
+  n <- length(target)
+  entropyValue <- 0
+  for (value in allValues){
+    p <- (length(subset(target, target == value))/n)
+    entropyValue = entropyValue - p*log2(p)
+  }
+  entropyValue
+}
+```
+
+```{r info-gain}
+infoGain <- function(dataset,feature,targetFeature){
+  infoGain_value <- entropy(dataset,targetFeature)
+  currentColumn <- dataset[,feature]
+  allValues <- unique(currentColumn)
+  n <- length(currentColumn)
+  for (value in allValues){
+    p <- (length(subset(currentColumn, currentColumn == value))/n)
+    entropyTemp <- entropy(subset(dataset, dataset[,feature] == value), targetFeature)
+    infoGain_value <- infoGain_value - p*entropyTemp
+  }
+  infoGain_value
+}
+```
+
+# Best Split Selection - First Round
+
+In ID3, information gain is used to choose the splitting attribute.
+Calculate information gain for each attribute to select the root split.
+
+```{r first-split-selection}
+infoGain_1 <- data.frame(
+  sex = infoGain(training_set,"sex","renew"),
+  age = infoGain(training_set,"age","renew"),
+  married = infoGain(training_set,"married","renew"),
+  income = infoGain(training_set,"income","renew"),
+  plan = infoGain(training_set,"plan","renew")
+  )
+infoGain_1
+```
+
+According to the calculation result for infomation gain, initial split is on age, because it has the highest information gain.
+
+# Split - First Round
+```{r first-split}
+training_set_ageY <- subset(training_set, training_set$age == "Y")
+training_set_ageM <- subset(training_set, training_set$age == "M")
+training_set_ageS <- subset(training_set, training_set$age == "S")
+training_set_ageY
+training_set_ageM
+training_set_ageS
+```
+
+## Check Stopping Criteria
+We found that for records of age "Middle", all of the customers will renew and for records of age "Senior", all of the customer will not renew. These two branches match the stopping criteria. We do not need to split these two branches any more. They are pure already.
+
+# Best Split Selection - Second Round
+
+Now we are going to find the best split feature for the branch with age "Young".
+```{r second-split-selection}
+infoGain_2 <- data.frame(
+  sex = infoGain(training_set_ageY,"sex","renew"),
+  married = infoGain(training_set_ageY,"married","renew"),
+  income = infoGain(training_set_ageY,"income","renew"),
+  plan = infoGain(training_set_ageY,"plan","renew")
+  )
+infoGain_2
+```
+
+We can find that "sex" feature has highest information gain. Then "sex" should be selected as next level split node.
+
+# Split - Second Round
+```{r second-split}
+training_set_ageY_sexM <- subset(training_set_ageY, training_set_ageY$sex == "M")
+training_set_ageY_sexF <- subset(training_set_ageY, training_set_ageY$sex == "F")
+training_set_ageY_sexM
+training_set_ageY_sexF
+```
+
+## Check Stopping Criteria
+All samples for the given nodes belong to the same class. Thus the split action terminates and the decision has been formed.
+
+```{r verification, include=FALSE}
+library(tree)
+tree <- tree(renew~sex+age+married+income+plan, data=training_set)
+plot(tree)
+text(tree, pretty=0)
+```
