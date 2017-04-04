@@ -2,27 +2,60 @@
 title: "kmeans"
 author: "MA Mingyu 14110562D"
 date: "4/4/2017"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
-#COMP4433 Assignment 2
+#COMP4433 Assignment 2 Question 3a
 ##derek.ma@connect.polyu.hk [derek.ma](http://derek.ma)
-This R markdown file can be found at https://github.com/derekmma/data-mining-algorithms/blob/master/apriori_simulation.Rmd
 
+#Set Up
+Import data, delete first column, set initial cluster centers to first two records and set k is equal to 2.
 ```{r setup, include=TRUE}
 library(dplyr)
 #PREPARE DATA IN USE
-data <- read.csv("~/Google Drive/_DM/2_Assignments/Ass2/data_q3.csv", stringsAsFactors = FALSE)
+data_original <- read.csv("~/Google Drive/_DM/2_Assignments/Ass2/data_q3.csv", stringsAsFactors = FALSE)
 #delete first column for this specific case becasue it is not a data record
-data <- data[,2:length(colnames(data))]
+data_original <- data_original[,2:length(colnames(data_original))]
 #SET VALUE OF K
 k <- 2
+data <- data_original
 #SET INITIAL CLUSTER CENTERS
 centers <- data[0,]
-colnames(centers) <- colnames(data)
-for (i in 1:k){
+#colnames(centers) <- colnames(data)
+#for (i in 1:k){
   #set first two record as initial centers
-  centers[i,] <- data[i,]
-}
+  #centers[i,] <- data[i,]
+#}
+```
+
+```{r preprocessing}
+#Normalization
+min1 <- min(data$B)
+max1 <- max(data$B)
+min2 <- min(data$C)
+max2 <- max(data$C)
+min3 <- min(data$D)
+max3 <- max(data$D)
+min4 <- min(data$E)
+max4 <- max(data$E)
+min5 <- min(data$F)
+max5 <- max(data$F)
+min6 <- min(data$G)
+max6 <- max(data$G)
+
+data_normalized <- data %>%
+  mutate(BN = (B - min1)/(max1-min1)) %>%
+  mutate(CN = (C - min2)/(max2-min2)) %>%
+  mutate(DN = (D - min3)/(max3-min3)) %>%
+  mutate(EN = (E - min4)/(max4-min4)) %>%
+  mutate(FN = (F - min5)/(max5-min5)) %>%
+  mutate(GN = (G - min6)/(max6-min6))
+
+data_normalized<-data_normalized[,c(7,8,9,10,11,12)]
+colnames(data_normalized) <- c("B","C","D","E","F","G")
+data <- data_normalized
+centers <- data[c(1,2),]
 ```
 
 # Basic Function 1 - Distance Function
@@ -32,8 +65,6 @@ distance <- function(vector1, vector2){
   #Euclidean distance
   #Input: two vectors of data with same length
   #Input example: c(1,2,3); c(2,3,4)
-  print(vector1)
-  print(vector2)
   count <- 0
   for (i in 1:length(vector1)){
     count = count + (vector1[i] - vector2[i])^2
@@ -43,6 +74,7 @@ distance <- function(vector1, vector2){
 ```
 
 # Basic Function 2 - Compare Similarity and Assign Objects to Clusters
+In this function, each record can be decivded belong to which clusters.
 ```{r assignObject}
 assign <- function(objectsData, centersData){
   #OUTPUT a data frame with new cluster information
@@ -57,7 +89,6 @@ assign <- function(objectsData, centersData){
       distValue <- distance(
         as.numeric(objectsData[i,]),
         as.numeric(centersData[j,]))
-      print(distValue)
       if (distValue < currentMinDist || whichCenter == 0){
         #FOUND CENTER WITH SMALLER DISSIMILARITY
         whichCenter <- j
@@ -72,6 +103,7 @@ assign <- function(objectsData, centersData){
 ```
 
 # Basic Function 3 - Calculate Mean Values of Objects and Update Centers
+In this function, the centers will be updated to the mean of clustered objects.
 ```{r updateCenters}
 update <- function(objectsData, centersData){
   #INPUT  objectsData: the data frame with original data and corresponding cluster information
@@ -81,13 +113,9 @@ update <- function(objectsData, centersData){
   result <- centersData
   for (i in 1:nrow(centersData)){
     #GET ALL NODES IN THIS CLUSTER
-    print(i)
     clusterData <- subset(objectsData, objectsData[,"cluster"] == i)
-    print(clusterData)
     #CALCULATE MEAN FOR EACH FEATURE & UPDATE CENTERS
     for (j in 1:ncol(centersData)){
-      print(j)
-      print(mean(clusterData[,j]))
       result[i,j] <- mean(clusterData[,j])
     }
   }
@@ -95,18 +123,32 @@ update <- function(objectsData, centersData){
 }
 ```
 
+#First Round
+Run the algorithm for the first time.
 ```{r firstRound}
 data1 <- assign(data, centers)
+data1
 centers1 <- update(data1, centers)
+centers1
 ```
+We can find that some data records are devided to belong to cluster 1 and others are belong to cluster 2. Update the centers.
 
+#Second Round
+Run the alogrithm for the second time.
 ```{r secondRound}
 data2 <- assign(data, centers)
+data2
 centers2 <- update(data2, centers)
+centers2
 ```
-
-We can find that the centers are not changed. Thus all objects are divided into two clusters. The clustering result is:
+We can find that the centers are not changed. Thus all objects are divided into two clusters and the final clustering result is already got. The clustering result is:
 
 ```{r result}
 data2
+```
+
+```{r verification, include=FALSE}
+library(datasets)
+verify <- kmeans(data,center=data[c(1,2),])
+verify
 ```
