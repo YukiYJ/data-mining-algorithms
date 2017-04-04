@@ -1,0 +1,45 @@
+---
+title: "kmeans"
+author: "MA Mingyu 14110562D"
+date: "4/4/2017"
+output: html_document
+---
+#COMP4433 Assignment 2
+##derek.ma@connect.polyu.hk [derek.ma](http://derek.ma)
+This R markdown file can be found at https://github.com/derekmma/data-mining-algorithms/blob/master/apriori_simulation.Rmd
+
+```{r setup, include=TRUE}
+library(dplyr)
+#PREPARE DATA IN USE
+data <- read.csv("~/Google Drive/_DM/2_Assignments/Ass2/data_q3.csv", stringsAsFactors = FALSE)
+#delete first column for this specific case becasue it is not a data record
+data <- data[,2:length(colnames(data))]
+#SET VALUE OF K
+k <- 2
+#SET INITIAL CLUSTER CENTERS
+centers <- data[0,]
+colnames(centers) <- colnames(data)
+for (i in 1:k){
+  #set first two record as initial centers
+  centers[i,] <- data[i,]
+}
+```
+
+# Basic Function 1 - Distance Function
+In this case, Euclidean Distance is used to calculate the dissimilarities.
+```{r distance}
+distance <- function(vector1, vector2){
+  #Euclidean distance
+  #Input: two vectors of data with same length
+  #Input example: c(1,2,3); c(2,3,4)
+  count <- 0
+  for (i in 1:length(vector1)){
+    count = count + (vector1[i] - vector2[i])^2
+  }
+  count^(1/2)
+}
+```
+
+# Basic Function 2 - Compare Similarity and Assign Objects to Clusters
+```{r assignObject}
+```
