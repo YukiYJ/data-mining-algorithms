@@ -32,6 +32,8 @@ distance <- function(vector1, vector2){
   #Euclidean distance
   #Input: two vectors of data with same length
   #Input example: c(1,2,3); c(2,3,4)
+  print(vector1)
+  print(vector2)
   count <- 0
   for (i in 1:length(vector1)){
     count = count + (vector1[i] - vector2[i])^2
@@ -42,4 +44,69 @@ distance <- function(vector1, vector2){
 
 # Basic Function 2 - Compare Similarity and Assign Objects to Clusters
 ```{r assignObject}
+assign <- function(objectsData, centersData){
+  #OUTPUT a data frame with new cluster information
+  #FOR EACH RECORDS
+  result <- objectsData %>% 
+    mutate(cluster = NA)
+  for (i in 1:nrow(objectsData)){
+    whichCenter <- 0
+    currentMinDist <- -1
+    #COUNT DISSIMILARITY BETWEEN IT AND CENTERS
+    for (j in 1:nrow(centersData)){
+      distValue <- distance(
+        as.numeric(objectsData[i,]),
+        as.numeric(centersData[j,]))
+      print(distValue)
+      if (distValue < currentMinDist || whichCenter == 0){
+        #FOUND CENTER WITH SMALLER DISSIMILARITY
+        whichCenter <- j
+        currentMinDist <- distValue
+      }
+    }
+    #SET THIS CENTER AS CLUSTER
+    result[i,"cluster"] <- whichCenter
+  }
+  result
+}
+```
+
+# Basic Function 3 - Calculate Mean Values of Objects and Update Centers
+```{r updateCenters}
+update <- function(objectsData, centersData){
+  #INPUT  objectsData: the data frame with original data and corresponding cluster information
+  #INPUT  centersData: all last round data for all centers
+  #OUTPUT a data frame with new centers
+  #FOR EACH CENTER
+  result <- centersData
+  for (i in 1:nrow(centersData)){
+    #GET ALL NODES IN THIS CLUSTER
+    print(i)
+    clusterData <- subset(objectsData, objectsData[,"cluster"] == i)
+    print(clusterData)
+    #CALCULATE MEAN FOR EACH FEATURE & UPDATE CENTERS
+    for (j in 1:ncol(centersData)){
+      print(j)
+      print(mean(clusterData[,j]))
+      result[i,j] <- mean(clusterData[,j])
+    }
+  }
+  result
+}
+```
+
+```{r firstRound}
+data1 <- assign(data, centers)
+centers1 <- update(data1, centers)
+```
+
+```{r secondRound}
+data2 <- assign(data, centers)
+centers2 <- update(data2, centers)
+```
+
+We can find that the centers are not changed. Thus all objects are divided into two clusters. The clustering result is:
+
+```{r result}
+data2
 ```
