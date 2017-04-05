@@ -1,0 +1,81 @@
+---
+title: "Hierarchical Agglomerative Single Linkage Clustering Simulation"
+author: "MA Mingyu 14110562D"
+date: "4/5/2017"
+output: pdf_document
+---
+#COMP4433 Assignment 2 Question 3d
+##derek.ma@connect.polyu.hk [derek.ma](http://derek.ma)
+
+#Set Up
+Import data, delete first column, set initial cluster centers to first two records and set k is equal to 2.
+```{r setup, include=TRUE}
+library(dplyr)
+#PREPARE DATA IN USE
+data <- read.csv("~/Google Drive/_DM/2_Assignments/Ass2/data_q3.csv", stringsAsFactors = FALSE)
+#delete first column for this specific case becasue it is not a data record
+data <- data[,2:length(colnames(data))]
+```
+
+```{r preprocessing}
+#Normalization
+min1 <- min(data$B)
+max1 <- max(data$B)
+min2 <- min(data$C)
+max2 <- max(data$C)
+min3 <- min(data$D)
+max3 <- max(data$D)
+min4 <- min(data$E)
+max4 <- max(data$E)
+min5 <- min(data$F)
+max5 <- max(data$F)
+min6 <- min(data$G)
+max6 <- max(data$G)
+
+data_normalized <- data %>%
+  mutate(BN = (B - min1)/(max1-min1)) %>%
+  mutate(CN = (C - min2)/(max2-min2)) %>%
+  mutate(DN = (D - min3)/(max3-min3)) %>%
+  mutate(EN = (E - min4)/(max4-min4)) %>%
+  mutate(FN = (F - min5)/(max5-min5)) %>%
+  mutate(GN = (G - min6)/(max6-min6))
+
+data_normalized <- data_normalized[,c(7,8,9,10,11,12)]
+colnames(data_normalized) <- c("B","C","D","E","F","G")
+data <- data_normalized
+# Create initial proximity matrix
+proximityMatrix <- data.frame(matrix(NA, ncol = nrow(data), nrow = nrow(data)))
+colnames(proximityMatrix) <- (1:nrow(data))
+```
+
+# Basic Function - Distance Function
+In this case, Euclidean Distance is used to calculate the dissimilarities.
+```{r distance}
+distance <- function(vector1, vector2){
+  #Euclidean distance
+  #Input: two vectors of data with same length
+  #Input example: c(1,2,3); c(2,3,4)
+  count <- 0
+  for (i in 1:length(vector1)){
+    count = count + (vector1[i] - vector2[i])^2
+  }
+  count^(1/2)
+}
+```
+
+# Create Initial Proximity Matrix
+```{r initialProximityMatrix}
+updateProximity <- function(){
+  for (irow in 1:nrow(proximityMatrix)){
+    for (icol in irow:ncol(proximityMatrix)){
+      
+    }
+  }
+}
+```
+
+# Round1
+## Merge the Closest Two Clusters
+## Update Proximity Matrix
+## Check Termination Criterion 
+

@@ -136,9 +136,9 @@ We can find that some data records are devided to belong to cluster 1 and others
 #Second Round
 Run the alogrithm for the second time.
 ```{r secondRound}
-data2 <- assign(data, centers)
+data2 <- assign(data, centers1)
 data2
-centers2 <- update(data2, centers)
+centers2 <- update(data2, centers1)
 centers2
 ```
 We can find that the centers are not changed. Thus all objects are divided into two clusters and the final clustering result is already got. The clustering result is:
