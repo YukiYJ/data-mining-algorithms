@@ -77,6 +77,16 @@ distance <- function(vector1, vector2){
 }
 ```
 
+```{r function2}
+indexOfMin <- function(objectsData){
+  #set all 0 values to NA
+  objectsData[objectsData == 0] <- NA
+  for (i in 1:nrow(objectsData)){
+    print(which.min(as.numeric(objectsData[i,])))
+  }
+}
+```
+
 # Create Initial Proximity Matrix
 ```{r initialProximityMatrix}
 updateProximity <- function(clustersData, objectsData, proximityData){

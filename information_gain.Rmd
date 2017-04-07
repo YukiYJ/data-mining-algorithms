@@ -1,12 +1,11 @@
 ---
-title: "Information_Gain_Computation"
+title: "Information Gain Simulation"
 author: "MA Mingyu 14110562D"
 date: "4/4/2017"
 output: pdf_document
 ---
-#COMP4433 Assignment 2
+#COMP4433 Assignment 2 Question 1a
 ##derek.ma@connect.polyu.hk [derek.ma](http://derek.ma)
-This R markdown file can be found at https://github.com/derekmma/data-mining-algorithms/blob/master/apriori_simulation.Rmd
 
 #Initialization of Training Data
 ```{r setup, include=TRUE}
@@ -55,7 +54,6 @@ infoGain <- function(dataset,feature,targetFeature){
 
 # Best Split Selection - First Round
 
-In ID3, information gain is used to choose the splitting attribute.
 Calculate information gain for each attribute to select the root split.
 
 ```{r first-split-selection}

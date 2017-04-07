@@ -1,20 +1,23 @@
 ---
-title: "kNN_distance"
+title: "kNN Simulation"
 author: "MA Mingyu 14110562D"
 date: "4/4/2017"
 output: pdf_document
 ---
-#COMP4433 Assignment 2
+#COMP4433 Assignment 2 Question 2 a, b and c
 ##derek.ma@connect.polyu.hk [derek.ma](http://derek.ma)
-This R markdown file can be found at https://github.com/derekmma/data-mining-algorithms/blob/master/apriori_simulation.Rmd
 
-
-```{r setup, include=TRUE}
+# Import Training Data
+```{r setup}
 library(dplyr)
 survey <- read.csv("~/Google Drive/_DM/2_Assignments/Ass2/data_q2.csv", stringsAsFactors = FALSE)
-colnames(survey) <- c ("customerNo","averageMonthlyPayment","averageDurationOfCalls","totalCallingTime","decision")
+colnames(survey) <- c ("customerNo",
+                  "averageMonthlyPayment",
+                  "averageDurationOfCalls",
+                  "totalCallingTime","decision")
 ```
 
+# Basic Function - Calculate Distance
 ```{r distance}
 distance <- function(vector1, vector2){
   #Euclidean distance
@@ -26,11 +29,13 @@ distance <- function(vector1, vector2){
 }
 ```
 
+# Set Value of k and Testing Data
 ```{r setTestData}
 k <- 5
 testData <- c(293.26,16.96,120.25)
 ```
 
+# Preprocessing the Data, Normalization
 ```{r preprocessing}
 #Normalization
 min1 <- min(survey$averageMonthlyPayment)
@@ -47,17 +52,66 @@ survey <- survey %>%
   mutate(averageMonthlyPaymentNormalized = (averageMonthlyPayment - min1)/(max1-min1)) %>%
   mutate(averageDurationOfCallsNormalized = (averageDurationOfCalls - min2)/(max2-min2)) %>%
   mutate(totalCallingTimeNormalized = (totalCallingTime - min3)/(max3-min3))
+survey
 ```
 
+# Calcualte Distance and Sort
 ```{r calculate distance}
 survey <- survey %>%
   mutate(dist=NA)
 
 for (i in 1:length(survey$customerNo)){
-  survey[i,"dist"] <- distance(testDataNormalized, c(survey[i,"averageMonthlyPaymentNormalized"],survey[i,"averageDurationOfCallsNormalized"],survey[i,"totalCallingTimeNormalized"]))
+  survey[i,"dist"] <- distance(testDataNormalized, 
+                      c(survey[i,"averageMonthlyPaymentNormalized"],
+                      survey[i,"averageDurationOfCallsNormalized"],
+                      survey[i,"totalCallingTimeNormalized"]))
 }
 
 surveySorted <- survey[order(survey$dist),]
 surveySorted[1:k,]
+sort(table(surveySorted[1:k,]$decision))
+```
+
+# Calcualte Distance and Sort for Another Test Data
+Without considering "Decision", we try quesiont 2b.
+```{r calculate distance 2}
+testData <- c(271.48,184)
+survey <- survey %>%
+  mutate(dist=NA)
+testDataNormalized <- c(
+  (testData[1]-min1)/(max1-min1),
+  (testData[2]-min3)/(max3-min3))
+
+for (i in 1:length(survey$customerNo)){
+  survey[i,"dist"] <- distance(testDataNormalized, 
+                      c(survey[i,"averageMonthlyPaymentNormalized"],
+                      survey[i,"totalCallingTimeNormalized"]))
+}
+
+surveySorted <- survey[order(survey$dist),]
+surveySorted[1:k,]
+sort(table(surveySorted[1:k,]$decision))
+```
+
+# Cross Validation and Choose the Value of k
+```{r cross validation}
+for (testIndex in 1:nrow(survey)){
+  testData <- c(survey[testIndex,"averageMonthlyPaymentNormalized"],
+                survey[testIndex,"averageDurationOfCallsNormalized"],
+                survey[testIndex,"totalCallingTimeNormalized"])
+  survey <- survey %>%
+    mutate(dist=NA)
+  for (i in 1:length(survey$customerNo)){
+    if(i != testIndex){
+      survey[i,"dist"] <- distance(testData, 
+                          c(survey[i,"averageMonthlyPaymentNormalized"],
+                          survey[i,"averageDurationOfCallsNormalized"],
+                          survey[i,"totalCallingTimeNormalized"]))
+      surveySorted <- survey[order(survey$dist),]
+      #print(tail(names(sort(table(surveySorted[1:k,]$decision))), 1))
+      print(sort(table(surveySorted[1:k,]$decision)))
+    }
+  }
+}
 ```
 
