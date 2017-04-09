@@ -17,14 +17,7 @@ data <- read.csv("~/Google Drive/_DM/2_Assignments/Ass2/data_q3.csv", stringsAsF
 data <- data[,2:length(colnames(data))]
 ```
 
-```{r testData}
-library(dplyr)
-data <- data.frame(
-  x=c(0.4,0.22,0.35,0.26,0.08,0.45),
-  y=c(0.53,0.38,0.32,0.19,0.41,0.3)
-    )
-```
-
+# Preprocessing and Normalization
 ```{r preprocessing}
 #Normalization
 min1 <- min(data$B)
@@ -53,6 +46,8 @@ colnames(data_normalized) <- c("B","C","D","E","F","G")
 data <- data_normalized
 ```
 
+# Set Parameters
+In this program, a clusters data frame will be used to save which nodes are in which clusters. Initial clusters distribution is saved in `clusters` data frame. After n iterations, the clusters distribution information will be saved in `clustersn` data frame.
 ```{r setParas}
 # Create initial proximity matrix
 proximityMatrix <- data.frame(matrix(NA, ncol = nrow(data), nrow = nrow(data)))
@@ -64,7 +59,9 @@ colnames(clusters) <- paste("cluster", colnames(clusters), sep = "_")
 clusters[1,] <- 1:nrow(data)
 ```
 
-```{r distance,include=FALSE}
+#Basic Function
+## Distance Function
+```{r distance,include}
 distance <- function(vector1, vector2){
   #Euclidean distance
   #Input: two vectors of data with same length
@@ -77,22 +74,60 @@ distance <- function(vector1, vector2){
 }
 ```
 
+## indexOfMin Function - Find row and column number for the minimum proximity in the proximity matrix
 ```{r function2}
 indexOfMin <- function(objectsData){
   #set all 0 values to NA
-  objectsData[objectsData == 0] <- NA
+  valueMinInRows <- rep(NA,nrow(objectsData))
+  colMinInRows <- rep(NA,nrow(objectsData))
+  objectsData[objectsData == 0] <- Inf
+  objectsData[is.na(objectsData)] <- Inf
   for (i in 1:nrow(objectsData)){
-    print(which.min(as.numeric(objectsData[i,])))
+    colMinInRows[i] <- which.min(as.numeric(objectsData[i,]))
+    valueMinInRows[i] <- min(objectsData[i,])
   }
+  row <- which.min(valueMinInRows)
+  col <- colMinInRows[row]
+  c(row,col)
 }
 ```
 
-# Create Initial Proximity Matrix
+## minOfMatrix Function - return the minimum value except 0 and NA in the matrix
+```{r function3}
+minOfMatrix <- function(objectsData){
+  #set all 0 values to NA
+  valueMinInRows <- rep(NA,nrow(objectsData))
+  colMinInRows <- rep(NA,nrow(objectsData))
+  objectsData[objectsData == 0] <- Inf
+  objectsData[is.na(objectsData)] <- Inf
+  for (i in 1:nrow(objectsData)){
+    colMinInRows[i] <- which.min(as.numeric(objectsData[i,]))
+    valueMinInRows[i] <- min(objectsData[i,])
+  }
+  min(valueMinInRows)
+}
+```
+
+## updateClusters Function - Based on the minimum proximity information, combine clusters
+```{r function-updateClusters}
+updateClusters <- function(index1,index2,clustersData){
+  newClustersData <- clustersData
+  baseIndex <- sum(!is.na(clustersData[,index2]))
+  addIndex <- sum(!is.na(clustersData[,index1]))
+  for (i in 1:addIndex){
+    newClustersData[baseIndex+i,index2] <- clustersData[i,index1]
+  }
+  newClustersData[,-index1]
+}
+```
+
+## updateProximity Function - calculate proximity between each pair of clusters and generate proximity matrix
 ```{r initialProximityMatrix}
 updateProximity <- function(clustersData, objectsData, proximityData){
-  newProximityData <- proximityData
-  for (irow in 1:nrow(clustersData)){
-    for (icol in irow:nrow(clustersData)){
+  newProximityData <- data.frame(matrix(NA,nrow=ncol(clustersData),ncol=ncol(clustersData)))
+  colnames(newProximityData) <- colnames(clustersData)
+  for (irow in 1:ncol(clustersData)){
+    for (icol in irow:ncol(clustersData)){
       # For each pair of clusters
       currentMinDist <- 0
       for (pointClu1 in 1:sum(!is.na(clustersData[,irow]))){
@@ -115,15 +150,171 @@ updateProximity <- function(clustersData, objectsData, proximityData){
 }
 ```
 
-```{r test1}
-temp <- updateProximity(clusters,data,proximityMatrix)
-```
+# Iteration
+For each iteration, following steps will be implemented:
+1 - Calculate proximity between each pair of clusters and update proximityMatrix
+2 - Find out where is the minimum proximity in the proximity matrix
+3 - Combine clusters and update the clusters table
+For each iteration, following tabls will be printed to answer the questions:
+d(1) - updated distance matrix: `proximityMatrixn`(n is the times of iterations)
+d(2) - partitions produced: `clustersn` can show the partitions for each iteration
+d(2) - final dendrogram: attached after this program
 
-# Round1
-## Merge the Closest Two Clusters
+## Iteration Round 1
 ```{r merge1}
-mydf[, colSums(mydf != "") != 0]
+proximityMatrix1 <- updateProximity(clusters,data,proximityMatrix)
+combineIndex <- indexOfMin(proximityMatrix1)
+minProximity <- minOfMatrix(proximityMatrix1)
+clusters1 <- updateClusters(combineIndex[1],combineIndex[2],clusters)
+proximityMatrix1
+minProximity
+clusters1
 ```
-## Update Proximity Matrix
-## Check Termination Criterion 
 
+## Iteration Round 2
+```{r merge2}
+proximityMatrix2 <- updateProximity(clusters1,data,proximityMatrix1)
+combineIndex <- indexOfMin(proximityMatrix2)
+minProximity <- minOfMatrix(proximityMatrix2)
+clusters2 <- updateClusters(combineIndex[1],combineIndex[2],clusters1)
+proximityMatrix2
+minProximity
+clusters2
+```
+
+## Iteration Round 3
+```{r merge3}
+proximityMatrix3 <- updateProximity(clusters2,data,proximityMatrix2)
+combineIndex <- indexOfMin(proximityMatrix3)
+minProximity <- minOfMatrix(proximityMatrix3)
+clusters3 <- updateClusters(combineIndex[1],combineIndex[2],clusters2)
+proximityMatrix3
+minProximity
+clusters3
+```
+
+## Iteration Round 4
+```{r merge4}
+proximityMatrix4 <- updateProximity(clusters3,data,proximityMatrix3)
+combineIndex <- indexOfMin(proximityMatrix4)
+minProximity <- minOfMatrix(proximityMatrix4)
+clusters4 <- updateClusters(combineIndex[1],combineIndex[2],clusters3)
+proximityMatrix4
+minProximity
+clusters4
+```
+
+## Iteration Round 5
+```{r merge5}
+proximityMatrix5 <- updateProximity(clusters4,data,proximityMatrix4)
+combineIndex <- indexOfMin(proximityMatrix5)
+minProximity <- minOfMatrix(proximityMatrix5)
+clusters5 <- updateClusters(combineIndex[1],combineIndex[2],clusters4)
+proximityMatrix5
+minProximity
+clusters5
+```
+
+## Iteration Round 6
+```{r merge6}
+proximityMatrix6 <- updateProximity(clusters5,data,proximityMatrix5)
+combineIndex <- indexOfMin(proximityMatrix6)
+minProximity <- minOfMatrix(proximityMatrix6)
+clusters6 <- updateClusters(combineIndex[1],combineIndex[2],clusters5)
+proximityMatrix6
+minProximity
+clusters6
+```
+
+## Iteration Round 7
+```{r merge7}
+proximityMatrix7 <- updateProximity(clusters6,data,proximityMatrix6)
+combineIndex <- indexOfMin(proximityMatrix7)
+minProximity <- minOfMatrix(proximityMatrix7)
+clusters7 <- updateClusters(combineIndex[1],combineIndex[2],clusters6)
+proximityMatrix7
+minProximity
+clusters7
+```
+
+## Iteration Round 8
+```{r merge8}
+proximityMatrix8 <- updateProximity(clusters7,data,proximityMatrix7)
+combineIndex <- indexOfMin(proximityMatrix8)
+minProximity <- minOfMatrix(proximityMatrix8)
+clusters8 <- updateClusters(combineIndex[1],combineIndex[2],clusters7)
+proximityMatrix8
+minProximity
+clusters8
+```
+
+## Iteration Round 9
+```{r merge9}
+proximityMatrix9 <- updateProximity(clusters8,data,proximityMatrix8)
+combineIndex <- indexOfMin(proximityMatrix9)
+minProximity <- minOfMatrix(proximityMatrix9)
+clusters9 <- updateClusters(combineIndex[1],combineIndex[2],clusters8)
+proximityMatrix9
+minProximity
+clusters9
+```
+
+## Iteration Round 10
+```{r merge10}
+proximityMatrix10 <- updateProximity(clusters9,data,proximityMatrix9)
+combineIndex <- indexOfMin(proximityMatrix10)
+minProximity <- minOfMatrix(proximityMatrix10)
+clusters10 <- updateClusters(combineIndex[1],combineIndex[2],clusters9)
+proximityMatrix10
+minProximity
+clusters10
+```
+
+## Iteration Round 11
+```{r merge11}
+proximityMatrix11 <- updateProximity(clusters10,data,proximityMatrix10)
+combineIndex <- indexOfMin(proximityMatrix11)
+minProximity <- minOfMatrix(proximityMatrix11)
+clusters11 <- updateClusters(combineIndex[1],combineIndex[2],clusters10)
+proximityMatrix11
+minProximity
+clusters11
+```
+
+## Iteration Round 12
+```{r merge12}
+proximityMatrix12 <- updateProximity(clusters11,data,proximityMatrix11)
+combineIndex <- indexOfMin(proximityMatrix12)
+minProximity <- minOfMatrix(proximityMatrix12)
+clusters12 <- updateClusters(combineIndex[1],combineIndex[2],clusters11)
+proximityMatrix12
+minProximity
+clusters12
+```
+
+## Iteration Round 13
+```{r merge13}
+proximityMatrix13 <- updateProximity(clusters12,data,proximityMatrix12)
+combineIndex <- indexOfMin(proximityMatrix13)
+minProximity <- minOfMatrix(proximityMatrix13)
+clusters13 <- updateClusters(combineIndex[1],combineIndex[2],clusters12)
+proximityMatrix13
+minProximity
+clusters13
+```
+
+## Iteration Round 14
+```{r merge14}
+proximityMatrix14 <- updateProximity(clusters13,data,proximityMatrix13)
+combineIndex <- indexOfMin(proximityMatrix14)
+minProximity <- minOfMatrix(proximityMatrix14)
+clusters14 <- updateClusters(combineIndex[1],combineIndex[2],clusters13)
+proximityMatrix14
+minProximity
+clusters14
+```
+Now all nodes are in one cluster. The final dengrogram has been formed.
+
+```{r verify,include=FALSE}
+plot(hclust(dist(data),method="single",members = NULL))
+```

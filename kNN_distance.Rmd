@@ -55,7 +55,9 @@ survey <- survey %>%
 survey
 ```
 
-# Calcualte Distance and Sort
+# Question 2a
+Assumption: if one testing node has the same count of nodes of specific properties, then the prediction of testing node will depends on the distance between the training nodes and testing node.
+For example, when k = 5, if two nodes are "switch", two nodes are "stay" and one node is "undecided" among the five nearest nodes, then I will compare the distance between two "switches" and testing node and the distance between two "stay" and testing node. If the sum of distance of two "switch" is smaller, then I will predict "switch" for this testing node.
 ```{r calculate distance}
 survey <- survey %>%
   mutate(dist=NA)
@@ -68,14 +70,32 @@ for (i in 1:length(survey$customerNo)){
 }
 
 surveySorted <- survey[order(survey$dist),]
-surveySorted[1:k,]
-sort(table(surveySorted[1:k,]$decision))
+surveySorted1 <- surveySorted[1:k,]
+surveySorted1
+result <- data.frame(decision=NA, count=NA, sumDist=NA)
+i <- 1
+for (deci in unique(surveySorted1$decision)){
+  temp <- surveySorted1[surveySorted1$decision==deci,]
+  result[i,] <- c(deci,nrow(temp),sum(temp$dist))
+  i <- i + 1
+}
+result <- result[order(-rank(result$count), result$sumDist),]
+result
 ```
+We can found that for the five nodes that are closest to the test node, two nodes are “switch”, two nodes are “stay”, and one node is “undecided.”
 
-# Calcualte Distance and Sort for Another Test Data
+While the distance of two "switch" nodes are smaller, thus the expected decision of the customer who has an average monthly payment of 293.26, an average duration of calls of 16.96 and a total calling time of 120.25 is "switch".
+
+# Question 2b
 Without considering "Decision", we try quesiont 2b.
+After get the five nearest nodes, average the distance and get the final result.
 ```{r calculate distance 2}
 testData <- c(271.48,184)
+max3 <- 184
+survey <- survey %>%
+  mutate(averageMonthlyPaymentNormalized = (averageMonthlyPayment - min1)/(max1-min1)) %>%
+  mutate(averageDurationOfCallsNormalized = (averageDurationOfCalls - min2)/(max2-min2)) %>%
+  mutate(totalCallingTimeNormalized = (totalCallingTime - min3)/(max3-min3))
 survey <- survey %>%
   mutate(dist=NA)
 testDataNormalized <- c(
@@ -89,29 +109,55 @@ for (i in 1:length(survey$customerNo)){
 }
 
 surveySorted <- survey[order(survey$dist),]
-surveySorted[1:k,]
-sort(table(surveySorted[1:k,]$decision))
+surveySorted1 <- surveySorted[1:k,]
+surveySorted1
+surveySorted1 %>% select(customerNo,averageDurationOfCalls)
+mean(surveySorted1$averageDurationOfCalls)
 ```
+Thus the final expected average duration of calls of a customer whose average monthly payment is 271.48 and total calling time is 184.00 is 8.464.
 
-# Cross Validation and Choose the Value of k
+# Question 2c
+## Cross Validation and Choose the Value of k
+Simulate the leave-one-out cross validation:
 ```{r cross validation}
-for (testIndex in 1:nrow(survey)){
-  testData <- c(survey[testIndex,"averageMonthlyPaymentNormalized"],
-                survey[testIndex,"averageDurationOfCallsNormalized"],
-                survey[testIndex,"totalCallingTimeNormalized"])
-  survey <- survey %>%
-    mutate(dist=NA)
-  for (i in 1:length(survey$customerNo)){
-    if(i != testIndex){
-      survey[i,"dist"] <- distance(testData, 
-                          c(survey[i,"averageMonthlyPaymentNormalized"],
-                          survey[i,"averageDurationOfCallsNormalized"],
-                          survey[i,"totalCallingTimeNormalized"]))
-      surveySorted <- survey[order(survey$dist),]
-      #print(tail(names(sort(table(surveySorted[1:k,]$decision))), 1))
-      print(sort(table(surveySorted[1:k,]$decision)))
+error <- rep(NA,20)
+k <- 1
+for (k in 1:length(error)){
+  errorCount <- 0
+  for (testIndex in 1:nrow(survey)){
+    testData <- c(survey[testIndex,"averageMonthlyPaymentNormalized"],
+                  survey[testIndex,"averageDurationOfCallsNormalized"],
+                  survey[testIndex,"totalCallingTimeNormalized"])
+    survey <- survey %>%
+      mutate(dist=NA)
+    for (i in 1:length(survey$customerNo)){
+      if(i != testIndex){
+        survey[i,"dist"] <- distance(testData, 
+                            c(survey[i,"averageMonthlyPaymentNormalized"],
+                            survey[i,"averageDurationOfCallsNormalized"],
+                            survey[i,"totalCallingTimeNormalized"]))
+      }
+    }
+    surveySorted <- survey[order(survey$dist),]
+    surveySorted1 <- surveySorted[1:k,]
+    result <- data.frame(decision=NA, count=NA, sumDist=NA)
+    i <- 1
+    for (deci in unique(surveySorted1$decision)){
+      temp <- surveySorted1[surveySorted1$decision==deci,]
+      result[i,] <- c(deci,nrow(temp),sum(temp$dist))
+      i <- i + 1
+    }
+    result <- result[order(-rank(result$count), result$sumDist),]
+    if (result$decision[1] != survey$decision[testIndex]){
+      errorCount <- errorCount + 1
     }
   }
+  error[k] <- errorCount
 }
+error
+plot(error)
 ```
 
+In the plot, the x axis shows the k value and y axis shows the count of error. From the result we can find that when k is equal to 19 the error count is smallest. While when k is 6, 8, the error count is relatively small. They are all good choices for k value.
+
+But due to there are not enough records for choosing k and I only try one method to choose k, this result is just constructive. I think I should try more cross validation methods such as k-fold cross validation and try to observe the best value of k. 

@@ -6,11 +6,11 @@ output:
   pdf_document: default
   html_document: default
 ---
-#COMP4433 Assignment 2 Question 3a
+#COMP4433 Assignment 2 Question 3 a, b and c
 ##derek.ma@connect.polyu.hk [derek.ma](http://derek.ma)
 
 #Set Up
-Import data, delete first column, set initial cluster centers to first two records and set k is equal to 2.
+Import data, delete first column, set initial cluster centers to first two records
 ```{r setup, include=TRUE}
 library(dplyr)
 #PREPARE DATA IN USE
@@ -18,17 +18,12 @@ data_original <- read.csv("~/Google Drive/_DM/2_Assignments/Ass2/data_q3.csv", s
 #delete first column for this specific case becasue it is not a data record
 data_original <- data_original[,2:length(colnames(data_original))]
 #SET VALUE OF K
-k <- 2
 data <- data_original
 #SET INITIAL CLUSTER CENTERS
 centers <- data[0,]
-#colnames(centers) <- colnames(data)
-#for (i in 1:k){
-  #set first two record as initial centers
-  #centers[i,] <- data[i,]
-#}
 ```
 
+#Data Preprocessing and Normalization
 ```{r preprocessing}
 #Normalization
 min1 <- min(data$B)
@@ -70,6 +65,16 @@ distance <- function(vector1, vector2){
     count = count + (vector1[i] - vector2[i])^2
   }
   count^(1/2)
+}
+distance2 <- function(vector1, vector2){
+  #Euclidean distance
+  #Input: two vectors of data with same length
+  #Input example: c(1,2,3); c(2,3,4)
+  count <- 0
+  for (i in 1:length(vector1)){
+    count = count + (vector1[i] - vector2[i])^2
+  }
+  count
 }
 ```
 
@@ -123,7 +128,8 @@ update <- function(objectsData, centersData){
 }
 ```
 
-#First Round
+#Question 3a
+##First Round
 Run the algorithm for the first time.
 ```{r firstRound}
 data1 <- assign(data, centers)
@@ -133,7 +139,7 @@ centers1
 ```
 We can find that some data records are devided to belong to cluster 1 and others are belong to cluster 2. Update the centers.
 
-#Second Round
+##Second Round
 Run the alogrithm for the second time.
 ```{r secondRound}
 data2 <- assign(data, centers1)
@@ -141,11 +147,146 @@ data2
 centers2 <- update(data2, centers1)
 centers2
 ```
+There are some changes for centers and cluster distribution. Update the centers again.
+
+##Third Round
+Then run the algorithm for the third time.
+```{r thirdRound}
+data3 <- assign(data, centers2)
+data3
+centers3 <- update(data3, centers2)
+centers3
+```
 We can find that the centers are not changed. Thus all objects are divided into two clusters and the final clustering result is already got. The clustering result is:
 
+##Result
 ```{r result}
-data2
+result_2 <- data3
+data3 %>% select(cluster)
+centers3
 ```
+
+#Question 3b
+## First Round
+```{r firstRound-b}
+centers <- data[c(13,14,15),]
+data1 <- assign(data, centers)
+data1
+centers1 <- update(data1, centers)
+centers1
+```
+
+## Second Round
+```{r secondRound-b}
+data2 <- assign(data, centers1)
+data2
+centers2 <- update(data2, centers1)
+centers2
+```
+
+## Third Round
+```{r thirdRound-b}
+data3 <- assign(data, centers2)
+data3
+centers3 <- update(data3, centers2)
+centers3
+```
+
+## Fourth Round
+```{r fourthRound-b}
+data4 <- assign(data, centers3)
+data4
+centers4 <- update(data4, centers3)
+centers4
+```
+
+## Fifth Round
+```{r fifthRound-b}
+data5 <- assign(data, centers4)
+data5
+centers5 <- update(data5, centers4)
+centers5
+```
+
+## Sixth Round
+```{r sixthRound-b}
+data6 <- assign(data, centers5)
+data6
+centers6 <- update(data6, centers5)
+centers6
+```
+We can found the coordinates for centers and cluster distrbution are not changed from round 5 to round 6. Thus we can terminate the iteration and find out the result:
+
+## Result
+```{r result-b}
+result_3 <- data6
+data6 %>% select(cluster)
+centers6
+```
+
+# Question 3c
+Calculate the CH index for the clustering result from (a) and (b), the performance should be better for the one with higher CH index.
+
+## Funcion - calculate within cluster variation
+```{r withinFunction}
+withinClusterVariation <- function(objectsData){
+  result <- rep(NA,length(unique(objectsData$cluster)))
+  for (clusterIndex in unique(objectsData$cluster)){
+    temp <- subset(objectsData, cluster==clusterIndex)
+    center <- rep(NA,ncol(objectsData)-1)
+    for (i in 1:(ncol(objectsData)-1)){
+      center[i] <- mean(temp[,i])
+    }
+    temp <- temp[,1:6]
+    sum <- 0
+    for (i in 1:nrow(temp)){
+      sum <- sum + distance2(center,as.numeric(temp[i,]))
+    }
+    result[clusterIndex] <- sum
+  }
+  sum(result)
+}
+```
+
+## Funcion - calculate between cluster variation
+```{r betweenFunction}
+betweenClusterVariation <- function(objectsData){
+  result <- rep(NA,length(unique(objectsData$cluster)))
+  center <- rep(NA,ncol(objectsData)-1)
+  for (i in 1:(ncol(objectsData)-1)){
+    center[i] <- mean(objectsData[,i])
+  }
+  for (clusterIndex in unique(objectsData$cluster)){
+    temp <- subset(objectsData, cluster==clusterIndex)
+    center1 <- rep(NA,ncol(objectsData)-1)
+    for (i in 1:(ncol(objectsData)-1)){
+      center1[i] <- mean(temp[,i])
+    }
+    sum <- 0
+    for (i in 1:nrow(temp)){
+      sum <- sum + distance2(center,center1)
+    }
+    result[clusterIndex] <- sum
+  }
+  sum(result)
+}
+```
+## Calculate CH Index
+```{r chindex}
+w2 <- withinClusterVariation(result_2)
+w3 <- withinClusterVariation(result_3)
+b2 <- betweenClusterVariation(result_2)
+b3 <- betweenClusterVariation(result_2)
+ch_2 <- ((b2/(2-1))/(w2/(15-2)))
+ch_3 <- ((b3/(3-1))/(w3/(15-3)))
+w2
+w3
+ch_2
+ch_3
+```
+
+## Result
+CH index for `k=2` is 31.65 which is small than CH index for `k=3`'s 36.42. For within cluster variation, `k=2` is larger than `k=3`. These two index both show that the performance of `k=3` is better than `k=2`.
 
 ```{r verification, include=FALSE}
 library(datasets)
